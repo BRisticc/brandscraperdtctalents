@@ -1,0 +1,26 @@
+# Without this, the Dockerfile's "COPY . ./" drags the host's node_modules
+# (237MB, wrong platform binaries) over the ones npm just installed in the image.
+node_modules/
+dist/
+dist-tests/
+*.tsbuildinfo
+
+# Local run state and secrets must never reach the image.
+storage/
+apify_storage/
+.env
+.env.*
+!.env.example
+
+.git/
+.gitignore
+.github/
+
+# Not needed at build or run time. README/LICENSE stay: Apify renders the
+# README on the actor page and it costs nothing to carry.
+tests/
+scripts/
+examples/
+*.log
+.DS_Store
+out/

@@ -1,0 +1,13 @@
+{
+  "brandNames": ["My Patriot Supply"],
+  "dorkTiers": ["core", "docs"],
+  "extraDorkSurfaces": ["site:behance.net", "site:coda.io", "filetype:key"],
+  "extraDocumentHosts": ["coda.io", "quip.com"],
+  "maxDorkQueries": 60,
+  "resultsPerDork": 20,
+  "maxClaimPagesPerBrand": 120,
+  "maxHarvestedPages": 150,
+  "minClaimScore": 35,
+  "outputFormats": ["json", "markdown"],
+  "proxyConfiguration": { "useApifyProxy": true }
+}

@@ -1,0 +1,15 @@
+{
+  "brandNames": ["My Patriot Supply", "Nutrient Survival"],
+  "extraBrandAliases": ["Ready Hour"],
+  "dorkTiers": ["core", "docs", "social", "directories"],
+  "dorkAfterDate": "2024-01-01",
+  "maxDorkQueries": 40,
+  "resultsPerDork": 10,
+  "maxClaimPagesPerBrand": 60,
+  "maxHarvestedPages": 40,
+  "minClaimScore": 45,
+  "serpCountry": "us",
+  "serpLanguage": "en",
+  "outputFormats": ["json", "markdown", "html"],
+  "proxyConfiguration": { "useApifyProxy": true }
+}

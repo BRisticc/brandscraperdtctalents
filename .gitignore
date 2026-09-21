@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-tests/
+*.tsbuildinfo
+storage/
+apify_storage/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+out/

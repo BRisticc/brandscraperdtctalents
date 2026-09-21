@@ -1,0 +1,238 @@
+{
+  "title": "Agency & Operator Attribution",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "brandNames": {
+      "title": "Brand name(s)",
+      "type": "array",
+      "description": "The brands to research. Each name is resolved to its own domain, then traced back to the agencies and freelancers who claim to run its ads. Example: 'My Patriot Supply'.",
+      "editor": "stringList",
+      "prefill": [
+        "My Patriot Supply"
+      ]
+    },
+    "extraBrandAliases": {
+      "title": "Extra brand aliases",
+      "type": "array",
+      "description": "Other names a brand answers to \u2014 house brands, product lines, the legal entity, social handles. 'My Patriot Supply' also trades as 'Ready Hour'. Applied to every brand in the run.",
+      "editor": "stringList"
+    },
+    "excludeDomains": {
+      "title": "Never these domains",
+      "type": "array",
+      "description": "Extra domains to drop from results and to exclude with -site:, on top of each brand's own domain and the built-in denylist of retailers and publishers.",
+      "editor": "stringList"
+    },
+    "resolveBrandSites": {
+      "title": "Resolve each brand to its own domain",
+      "type": "boolean",
+      "description": "One plain query per brand (not a dork). The domain is not the goal \u2014 it is what goes into -site: so the brand's own marketing cannot answer for who runs its ads. Turn off only if you are supplying exclusions yourself.",
+      "default": true
+    },
+    "serpProvider": {
+      "title": "Search provider",
+      "type": "string",
+      "description": "Where the dorks are run. 'auto' uses the Apify SERP actor when a token is available, and otherwise turns the run off rather than failing halfway through.",
+      "editor": "select",
+      "enum": [
+        "auto",
+        "apify-actor",
+        "none"
+      ],
+      "enumTitles": [
+        "Auto",
+        "Apify SERP actor",
+        "Off"
+      ],
+      "default": "auto",
+      "sectionCaption": "Search",
+      "sectionDescription": "Google blocks datacentre IPs within a handful of advanced-operator queries, so the dorks go through a SERP actor rather than a direct fetch."
+    },
+    "serpApifyActorId": {
+      "title": "SERP actor ID",
+      "type": "string",
+      "description": "The Apify actor that runs the dorks. Any actor taking a multi-line 'queries' input and returning 'organicResults' works.",
+      "editor": "textfield",
+      "default": "apify/google-search-scraper"
+    },
+    "serpApifyActorInput": {
+      "title": "SERP actor input overrides",
+      "type": "object",
+      "description": "Merged last into the SERP actor's input, so any actor-specific option wins \u2014 proxy groups, result counts, locale.",
+      "editor": "json"
+    },
+    "serpCountry": {
+      "title": "Search country",
+      "type": "string",
+      "description": "ISO-3166 alpha-2 country the searches are issued from.",
+      "editor": "textfield",
+      "default": "us"
+    },
+    "serpLanguage": {
+      "title": "Search language",
+      "type": "string",
+      "description": "ISO-639-1 language for the searches.",
+      "editor": "textfield",
+      "default": "en"
+    },
+    "dorkTiers": {
+      "title": "Dork tiers",
+      "type": "array",
+      "description": "Which families of queries to run. 'core' finds most agencies on its own. 'docs' is the one that reaches open Google Docs/Drive/Slides/Canva decks and PDF/PPTX case studies. 'wide' is the long tail \u2014 more cost, more noise.",
+      "editor": "select",
+      "items": {
+        "type": "string",
+        "enum": [
+          "core",
+          "docs",
+          "social",
+          "directories",
+          "wide"
+        ],
+        "enumTitles": [
+          "Core \u2014 case studies, client rosters, results claims",
+          "Docs \u2014 Google Docs/Drive/Slides, open Drive folders, Canva, PDF & PPTX decks",
+          "Social \u2014 LinkedIn, X, YouTube, Medium, Reddit",
+          "Directories \u2014 Clutch, Upwork, Contra, GoodFirms",
+          "Wide \u2014 wildcards and proximity long tail"
+        ]
+      },
+      "default": [
+        "core",
+        "docs",
+        "social",
+        "directories"
+      ],
+      "sectionCaption": "Dorks",
+      "sectionDescription": "Queries multiply four axes \u2014 the brand, the surface practitioners publish on, the language of claiming credit, and the role words \u2014 generated in weighted tiers, with the cap spread across tiers so no one tier eats the budget."
+    },
+    "extraDorkSurfaces": {
+      "title": "Extra surfaces",
+      "type": "array",
+      "description": "Raw operator fragments appended to the built-in surface catalogue, e.g. 'site:behance.net' or 'filetype:key'. Each one gets the strongest core recipes.",
+      "editor": "stringList"
+    },
+    "maxDorkQueries": {
+      "title": "Max dorks per brand",
+      "type": "integer",
+      "description": "Queries are generated in weighted order and the cap is spread across the enabled tiers, so it always contains each tier's strongest queries.",
+      "default": 40,
+      "minimum": 1,
+      "maximum": 300
+    },
+    "resultsPerDork": {
+      "title": "Results per dork",
+      "type": "integer",
+      "description": "Organic results requested per query.",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 100
+    },
+    "dorkAfterDate": {
+      "title": "Only results after (YYYY-MM-DD)",
+      "type": "string",
+      "description": "Becomes Google's after: operator. The single best way to ask 'who runs this account NOW' rather than who ran it in 2019.",
+      "editor": "textfield"
+    },
+    "dorkBeforeDate": {
+      "title": "Only results before (YYYY-MM-DD)",
+      "type": "string",
+      "description": "Becomes Google's before: operator. Pair with the after: date to isolate one era of an account.",
+      "editor": "textfield"
+    },
+    "maxClaimPagesPerBrand": {
+      "title": "Max pages to open per brand",
+      "type": "integer",
+      "description": "Hard cap on pages actually fetched and read. This is the real cost control: results are ranked before anything is opened.",
+      "default": 60,
+      "minimum": 1,
+      "maximum": 500,
+      "sectionCaption": "Reading and verification",
+      "sectionDescription": "A SERP snippet is a claim about a page, not the page. Every surviving result is opened and the brand mention confirmed in the body before anyone is named."
+    },
+    "maxHarvestedPages": {
+      "title": "Documents to follow per brand",
+      "type": "integer",
+      "description": "After opening each dork hit, the actor reads any Google Docs/Drive/Slides/Canva/Notion/Dropbox links off that page and opens those too. This is the main way to reach open Drive material: Google indexes a Drive file only once something crawlable has linked it, and then usually indexes little more than the title. Set to 0 to turn the second pass off.",
+      "default": 40,
+      "minimum": 0,
+      "maximum": 300
+    },
+    "extraDocumentHosts": {
+      "title": "Extra document hosts to follow",
+      "type": "array",
+      "description": "Hosts the second pass should treat as document hosts on top of the built-in list (Google Docs/Drive, Canva, Notion, Dropbox, Airtable, Figma, Miro, Pitch, SlideShare). Use it for a company wiki, a Coda space or a file server, e.g. 'coda.io'.",
+      "editor": "stringList"
+    },
+    "minClaimScore": {
+      "title": "Minimum claim score",
+      "type": "integer",
+      "description": "Operators scoring below this are dropped. Raise it for a short, high-confidence list; lower it when a brand returns nothing.",
+      "default": 45,
+      "minimum": 0,
+      "maximum": 100
+    },
+    "outputFormats": {
+      "title": "Report formats",
+      "type": "array",
+      "description": "Which reports to write to the key-value store alongside the dataset.",
+      "editor": "select",
+      "items": {
+        "type": "string",
+        "enum": [
+          "json",
+          "markdown",
+          "html"
+        ],
+        "enumTitles": [
+          "REPORT.json",
+          "REPORT.md",
+          "REPORT.html"
+        ]
+      },
+      "default": [
+        "json",
+        "markdown",
+        "html"
+      ],
+      "sectionCaption": "Output and runtime"
+    },
+    "maxConcurrency": {
+      "title": "Max concurrency",
+      "type": "integer",
+      "description": "Parallel page fetches. Brands themselves run two at a time whatever this is set to, because each fires its own nested SERP run.",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 50
+    },
+    "requestTimeoutSecs": {
+      "title": "Request timeout (seconds)",
+      "type": "integer",
+      "description": "Per-request timeout when opening a page.",
+      "default": 30,
+      "minimum": 5,
+      "maximum": 300
+    },
+    "maxRequestRetries": {
+      "title": "Max request retries",
+      "type": "integer",
+      "description": "Retries on a retryable HTTP status or a network failure.",
+      "default": 3,
+      "minimum": 0,
+      "maximum": 10
+    },
+    "proxyConfiguration": {
+      "title": "Proxy configuration",
+      "type": "object",
+      "description": "Strongly recommended: agency sites and document hosts both rate-limit datacentre IPs.",
+      "editor": "proxy",
+      "default": {
+        "useApifyProxy": true
+      }
+    }
+  },
+  "required": [
+    "brandNames"
+  ]
+}

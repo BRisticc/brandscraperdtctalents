@@ -1,0 +1,51 @@
+{
+  "actorSpecification": 1,
+  "name": "agency-attribution",
+  "title": "Agency & Operator Attribution",
+  "description": "Give it a brand name and it finds the agencies, media buyers and creative strategists who claim to run its ads — across case studies, client rosters, LinkedIn, Clutch/Upwork and open Google Docs/Drive/Canva decks — with a quote and a source URL behind every claim.",
+  "version": "1.0",
+  "buildTag": "latest",
+  "meta": {
+    "templateId": "ts-crawlee-cheerio"
+  },
+  "input": "./input_schema.json",
+  "dockerfile": "./Dockerfile",
+  "storages": {
+    "dataset": {
+      "actorSpecification": 1,
+      "title": "Attribution per brand",
+      "views": {
+        "overview": {
+          "title": "Who runs each brand",
+          "transformation": {
+            "fields": [
+              "brand",
+              "domain",
+              "topOperator",
+              "topOperatorKind",
+              "topOperatorScore",
+              "operatorCount",
+              "documentsHarvested",
+              "pagesRead",
+              "dorksRun"
+            ]
+          },
+          "display": {
+            "component": "table",
+            "properties": {
+              "brand": { "label": "Brand" },
+              "domain": { "label": "Domain" },
+              "topOperator": { "label": "Top operator" },
+              "topOperatorKind": { "label": "Type" },
+              "topOperatorScore": { "label": "Score" },
+              "operatorCount": { "label": "Operators" },
+              "documentsHarvested": { "label": "Docs followed" },
+              "pagesRead": { "label": "Pages read" },
+              "dorksRun": { "label": "Dorks" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

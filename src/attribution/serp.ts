@@ -113,6 +113,51 @@ export function normaliseSerpItem(
     return out;
 }
 
+/**
+ * Turns one nested run into the warning a human needs, or null when it went
+ * fine.
+ *
+ * This exists because `Actor.call` resolves with the run whatever its terminal
+ * status: a FAILED nested run still hands back an (empty) default dataset, so
+ * without an explicit status check the caller reads zero items and reports
+ * "Google found nothing" for what was actually an actor that never ran. That
+ * is the difference between "narrow your dorks" and "rent the actor".
+ */
+export function describeRunOutcome(input: {
+    actorId: string;
+    batchNumber: number;
+    batchSize: number;
+    status?: string;
+    runId?: string;
+    hasDataset: boolean;
+    itemCount: number;
+    parsedCount: number;
+}): string | null {
+    const where = `batch ${input.batchNumber} (${input.batchSize} quer${input.batchSize === 1 ? 'y' : 'ies'})`;
+    const run = input.runId
+        ? ` Nested run ${input.runId}: https://console.apify.com/actors/runs/${input.runId}`
+        : '';
+
+    if (input.status && input.status !== 'SUCCEEDED') {
+        return `SERP actor "${input.actorId}" ${where}: nested run ended ${input.status}, not SUCCEEDED. `
+            + `Open it to see why — a rental actor you have not subscribed to, or one out of memory or time, `
+            + `fails here and looks like "no results" downstream.${run}`;
+    }
+    if (!input.hasDataset) {
+        return `SERP actor "${input.actorId}" ${where}: no dataset came back.${run}`;
+    }
+    if (input.itemCount === 0) {
+        return `SERP actor "${input.actorId}" ${where}: the run succeeded but its dataset is empty. `
+            + `Google returned nothing for these queries, or the actor was blocked.${run}`;
+    }
+    if (input.parsedCount === 0) {
+        return `SERP actor "${input.actorId}" ${where}: ${input.itemCount} item(s) came back but none held organic `
+            + `results in a shape this actor reads. Check that actor's output, or point serpApifyActorId `
+            + `at a different one.${run}`;
+    }
+    return null;
+}
+
 export interface ApifySerpOptions {
     actorId: string;
     extraInput?: Record<string, unknown>;
@@ -170,29 +215,44 @@ export class ApifySerpProvider implements SerpProvider {
                 if (this.opts.timeoutSecs) callOptions.timeout = this.opts.timeoutSecs;
 
                 const run = await Actor.call(this.opts.actorId, input, callOptions);
-                if (!run?.defaultDatasetId) {
-                    this.warnings.push(`SERP actor "${this.opts.actorId}" returned no dataset for batch ${start / batchSize + 1}.`);
-                    continue;
+                const batchNumber = Math.floor(start / batchSize) + 1;
+                if (run?.id) {
+                    log.info(`  SERP batch ${batchNumber}: nested run ${run.id} → ${run.status ?? 'unknown status'}`);
                 }
 
-                const { items } = await Actor.apifyClient
-                    .dataset(run.defaultDatasetId)
-                    .listItems({ limit: batch.length * Math.max(1, opts.resultsPerQuery) + batch.length });
+                let items: unknown[] = [];
+                if (run?.defaultDatasetId && run.status === 'SUCCEEDED') {
+                    ({ items } = await Actor.apifyClient
+                        .dataset(run.defaultDatasetId)
+                        .listItems({ limit: batch.length * Math.max(1, opts.resultsPerQuery) + batch.length }));
+                }
 
                 const before = results.length;
                 for (const item of items) {
                     results.push(...normaliseSerpItem(item as Record<string, unknown>, byQuery, this.name, batch[0]));
                 }
-                if (results.length === before && items.length > 0) {
-                    this.warnings.push(
-                        `SERP actor "${this.opts.actorId}" returned ${items.length} items with no organic results. `
-                        + 'Check that actor\'s output shape, or point serpApifyActorId at a different one.',
-                    );
+
+                const problem = describeRunOutcome({
+                    actorId: this.opts.actorId,
+                    batchNumber,
+                    batchSize: batch.length,
+                    ...(run?.status ? { status: run.status } : {}),
+                    ...(run?.id ? { runId: run.id } : {}),
+                    hasDataset: Boolean(run?.defaultDatasetId),
+                    itemCount: items.length,
+                    parsedCount: results.length - before,
+                });
+                if (problem) {
+                    log.warning(problem);
+                    this.warnings.push(problem);
                 }
             } catch (err) {
                 const message = (err as Error).message;
                 log.warning(`SERP actor call failed: ${message}`);
-                this.warnings.push(`SERP actor call failed on batch ${start / batchSize + 1}: ${message}`);
+                this.warnings.push(
+                    `SERP actor "${this.opts.actorId}" could not be called for batch `
+                    + `${Math.floor(start / batchSize) + 1}: ${message}`,
+                );
             }
         }
 

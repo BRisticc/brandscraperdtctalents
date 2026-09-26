@@ -148,13 +148,22 @@ export async function researchAgencies(
         ...(opts.country ? { country: opts.country } : {}),
         ...(opts.language ? { language: opts.language } : {}),
     };
+    // The provider explains its own failures; carry whatever it said during
+    // THIS brand's search into this brand's row, so a dataset row is
+    // self-diagnosing instead of pointing at a run-level report.
+    const warningsBefore = opts.provider.warnings.length;
     const results = await opts.provider.search(queries, serpOptions);
+    warnings.push(...opts.provider.warnings.slice(warningsBefore));
     empty.resultsSeen = results.length;
 
     if (results.length === 0) {
+        const providerSpoke = opts.provider.warnings.length > warningsBefore;
         warnings.push(
-            `No search results for "${target.brand}" across ${queries.length} dorks. Either the SERP provider is `
-            + 'misconfigured, or the operators were filtered — try fewer tiers and a wider date window.',
+            `No search results for "${target.brand}" across ${queries.length} dorks.`
+            + (providerSpoke
+                ? ' See the search-provider warning above for why.'
+                : ' The provider reported no problem, so the queries themselves matched nothing —'
+                  + ' try fewer tiers, a lower minClaimScore, or a wider date window.'),
         );
         return empty;
     }

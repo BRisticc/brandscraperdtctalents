@@ -11,7 +11,9 @@ import { claimantFromUrl, claimantsFromText, mergeClaimant } from '../src/attrib
 import {
     extractClaimPhrases, extractMetrics, quoteAround, scoreEvidence,
 } from '../src/attribution/verify.js';
-import { normaliseSerpItem, itemQueryTerm, type SerpResult } from '../src/attribution/serp.js';
+import {
+    describeRunOutcome, itemQueryTerm, normaliseSerpItem, type SerpResult,
+} from '../src/attribution/serp.js';
 import { resolutionQuery, scoreBrandSite } from '../src/attribution/resolve.js';
 import { buildOperatorLeaderboard } from '../src/report/report-builder.js';
 import { htmlToText, load } from '../src/util/html.js';
@@ -560,6 +562,57 @@ describe('SERP normalisation', () => {
         assert.equal(itemQueryTerm({ searchQuery: { term: 'a' } }), 'a');
         assert.equal(itemQueryTerm({ keyword: 'b' }), 'b');
         assert.equal(itemQueryTerm({}), '');
+    });
+});
+
+describe('reporting what a nested SERP run actually did', () => {
+    const base = {
+        actorId: 'apify/google-search-scraper',
+        batchNumber: 1,
+        batchSize: 20,
+        runId: 'abc123',
+        status: 'SUCCEEDED',
+        hasDataset: true,
+        itemCount: 5,
+        parsedCount: 12,
+    };
+
+    it('says nothing when the run worked', () => {
+        assert.equal(describeRunOutcome(base), null);
+    });
+
+    // `Actor.call` resolves with the run whatever its terminal status, and a
+    // failed run still hands back an empty dataset — so without this the
+    // caller reports "Google found nothing" for an actor that never ran.
+    it('names a failed nested run rather than blaming the dorks', () => {
+        const message = describeRunOutcome({ ...base, status: 'FAILED', itemCount: 0, parsedCount: 0 });
+        assert.match(message ?? '', /ended FAILED/);
+        assert.match(message ?? '', /abc123/);
+        assert.doesNotMatch(message ?? '', /Google returned nothing/);
+    });
+
+    it('treats an aborted or timed-out run the same way', () => {
+        for (const status of ['ABORTED', 'TIMED-OUT']) {
+            assert.match(describeRunOutcome({ ...base, status, itemCount: 0, parsedCount: 0 }) ?? '', new RegExp(status));
+        }
+    });
+
+    it('links the nested run so a human can open it', () => {
+        const message = describeRunOutcome({ ...base, status: 'FAILED' });
+        assert.match(message ?? '', /console\.apify\.com\/actors\/runs\/abc123/);
+    });
+
+    it('separates an empty dataset from an unreadable one', () => {
+        const emptyRun = describeRunOutcome({ ...base, itemCount: 0, parsedCount: 0 });
+        assert.match(emptyRun ?? '', /dataset is empty/);
+
+        const unreadable = describeRunOutcome({ ...base, itemCount: 7, parsedCount: 0 });
+        assert.match(unreadable ?? '', /none held organic results/);
+        assert.match(unreadable ?? '', /serpApifyActorId/);
+    });
+
+    it('reports a missing dataset', () => {
+        assert.match(describeRunOutcome({ ...base, hasDataset: false }) ?? '', /no dataset came back/);
     });
 });
 

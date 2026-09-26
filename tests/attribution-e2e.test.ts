@@ -307,6 +307,27 @@ describe('attribution end to end', () => {
         assert.deepEqual(result.claims, []);
         assert.equal(result.resultsSeen, 0);
         assert.ok(result.warnings.some((w) => /No search results/.test(w)));
+        // Nothing went wrong in the provider, so the advice is about the dorks.
+        assert.ok(result.warnings.some((w) => /queries themselves matched nothing/.test(w)));
+    });
+
+    it('carries the provider\'s own reason into the brand row', async () => {
+        // A dataset row that says "no results" without saying why sends the
+        // reader to the run report; the reason belongs on the row.
+        class BrokenProvider extends StubSerpProvider {
+            override async search(queries: DorkQuery[]): Promise<SerpResult[]> {
+                await super.search(queries);
+                this.warnings.push('SERP actor "x/y" batch 1: nested run ended FAILED, not SUCCEEDED.');
+                return [];
+            }
+        }
+        const result = await researchAgencies({ brand: 'My Patriot Supply' }, options(new BrokenProvider([])));
+        assert.ok(
+            result.warnings.some((w) => /ended FAILED/.test(w)),
+            `provider reason missing from the row: ${result.warnings.join(' | ')}`,
+        );
+        assert.ok(result.warnings.some((w) => /See the search-provider warning above/.test(w)));
+        assert.ok(!result.warnings.some((w) => /queries themselves matched nothing/.test(w)));
     });
 
     it('never dorks the whole web for an empty brand name', async () => {

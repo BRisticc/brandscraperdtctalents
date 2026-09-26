@@ -62,6 +62,14 @@
       "description": "Merged last into the SERP actor's input, so any actor-specific option wins \u2014 proxy groups, result counts, locale.",
       "editor": "json"
     },
+    "serpBatchSize": {
+      "title": "Dorks per nested search run",
+      "type": "integer",
+      "description": "How many queries go into one nested SERP actor run. The SERP actor takes many queries at once (one per line), so batching keeps one run per 20 dorks instead of 20 runs. Set to 1 when debugging: it isolates a failure to a single query.",
+      "default": 20,
+      "minimum": 1,
+      "maximum": 100
+    },
     "serpCountry": {
       "title": "Search country",
       "type": "string",

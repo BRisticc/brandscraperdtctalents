@@ -13,6 +13,8 @@ export interface ActorInput {
     serpProvider: SerpProviderName;
     serpApifyActorId: string;
     serpApifyActorInput?: Record<string, unknown>;
+    /** Dorks per nested SERP run. 1 isolates a failure to a single query. */
+    serpBatchSize: number;
     serpCountry: string;
     serpLanguage: string;
     dorkTiers: DorkTier[];
@@ -99,6 +101,7 @@ export function parseInput(raw: Record<string, unknown> | null): ActorInput {
         resolveBrandSites: input.resolveBrandSites !== false,
         serpProvider: asEnum(input.serpProvider, ['auto', 'apify-actor', 'none'] as const, 'auto'),
         serpApifyActorId: asString(input.serpApifyActorId) ?? 'apify/google-search-scraper',
+        serpBatchSize: asInt(input.serpBatchSize, 20, 1, 100),
         serpCountry: (asString(input.serpCountry) ?? 'us').toLowerCase(),
         serpLanguage: (asString(input.serpLanguage) ?? 'en').toLowerCase(),
         dorkTiers: asArray<string>(input.dorkTiers, ['core', 'docs', 'social', 'directories'])

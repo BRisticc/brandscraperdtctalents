@@ -197,6 +197,14 @@ export class ApifySerpProvider implements SerpProvider {
 
         for (let start = 0; start < wanted.length; start += batchSize) {
             const batch = wanted.slice(start, start + batchSize);
+            // Only fields apify/google-search-scraper actually declares. An
+            // undeclared property fails Apify's input validation outright, and
+            // a nested run that never starts is the hardest failure to read
+            // from the outside. Anything else goes through serpApifyActorInput.
+            //
+            // proxyConfiguration is deliberately NOT set: that actor runs on
+            // Apify's GOOGLE_SERP proxy group by default, and overriding it
+            // with residential or datacentre groups gets soft-blocked.
             const input: Record<string, unknown> = {
                 queries: batch.map((q) => q.query).join('\n'),
                 resultsPerPage: Math.min(100, Math.max(1, opts.resultsPerQuery)),
@@ -204,8 +212,6 @@ export class ApifySerpProvider implements SerpProvider {
                 countryCode: (opts.country ?? 'us').toLowerCase(),
                 languageCode: (opts.language ?? 'en').toLowerCase(),
                 mobileResults: false,
-                saveHtml: false,
-                includeUnfilteredResults: false,
                 ...(this.opts.extraInput ?? {}),
             };
 

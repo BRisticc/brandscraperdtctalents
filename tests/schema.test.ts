@@ -103,6 +103,7 @@ describe('schema and parser agree', () => {
         ['resolveBrandSites', true],
         ['serpProvider', 'auto'],
         ['serpApifyActorId', 'apify/google-search-scraper'],
+        ['serpBatchSize', 20],
         ['serpCountry', 'us'],
         ['serpLanguage', 'en'],
         ['maxDorkQueries', 40],

@@ -37,6 +37,7 @@ try {
     if (providerName === 'apify-actor') {
         serpProvider = new ApifySerpProvider({
             actorId: input.serpApifyActorId,
+            batchSize: input.serpBatchSize,
             ...(input.serpApifyActorInput ? { extraInput: input.serpApifyActorInput } : {}),
         });
     } else {
